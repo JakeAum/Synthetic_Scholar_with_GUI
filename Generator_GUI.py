@@ -1,5 +1,6 @@
 # This will be my attempt at creating a GUI for the study guide generator using CustomTkinter
 
+#########################
 # Import Statements
 import customtkinter as ctk
 import openai
@@ -13,92 +14,145 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.styles import ParagraphStyle
 
-
-# Ease of use insert Variables
-API_KEY = "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"
+#########################
+# Default Key and Model written to Input Boxes
+API_KEY = "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"
 model_engine = "text-davinci-003"
-COLLEGE_DIRECTORY = "Output"
-list_of_topics = []
 
+#########################
 # Functions
-def full_monty():
-    # use-full monty function processes to update the progress bar for the script
-    new_api_key()
-    progressBar.set(0.1)
+
+# dummy function to pass test data into user input
 
 
-    new_model_name()
-    progressBar.set(0.2)
+def test_file_text(test_number):
+    # Needs to read in all of the text for each line in the file
+    if test_number == 1:
+        test_file = open("Inputs/test1.txt", "r")
+        test_file_text = test_file.read()
+        return test_file_text
 
+    elif test_number == 2:
+        test_file = open("Inputs/test2.txt", "r")
+        test_file_text = test_file.read()
+        return test_file_text
+
+# Main function that will be called when the button is pressed
+
+
+def main():
+    #########################
+    # Executes the Full process of the Study Guide Generator when the button is pressed
+    #########################
+
+    read_inputs()
     write_to_classes()
-    progressBar.set(0.3)
+    topic_generator()
+   # new_prompts()
+    # main_gpt()
 
-    new_prompts()
-    progressBar.set(0.5)
+# Function that will read in the inputs from the GUI
 
-    main_gpt()
-    progressBar.set(0.75)
 
-def new_api_key():
-    API_KEY = openaiKEY.get()
-
-def new_model_name():
+def read_inputs():
+    #########################
+    # Read in the API Key and Model, default values are written in but use can change them.
+    #########################
+    global API_KEY, model_engine
+    API_KEY = openaiKEY.get(0.0)
     model_engine = modelEntry.get()
 
+# Function that will read the user's course list
+
+
 def write_to_classes():
-    # Get the text from the inputBox
-    text = inputBox.get("1.0", 'end-1c')  # Gets text from the first character to the last character
+    # Gets text from the first character to the last character from the Course List
+    text = inputBox.get("1.0", 'end-1c')
+
     # Split the text into lines
     lines = text.splitlines()
+
     # Open the file in write mode
-    with open('Inputs/course_list.txt', 'w') as file:
+    with open('Outputs/course_list.txt', 'w') as file:
         # Process each line
         for line in lines:
             line = line.strip()  # Remove leading/trailing whitespace
             if line:  # Ignore empty lines
-                # Write the line to the file
-                file.write(line + '\n')  # Add a newline character to end of each line
+                # Write the line to the file, then add a newline
+                file.write(line + '\n')
+    print("Done writing course_list.txt")
+
+# Function that will create prompts for each course
 
 
-def topic_generator(subject):
-    # Set the API key and model
+def topic_generator():
+    # Initialization
+    global API_KEY, model_engine
+    num_topics = 5
     openai.api_key = API_KEY
-    prompt = "Create a list of class 50 unique topics (1-3 words long) commonly found in a college textbook table of contents for " + subject + " course in a bulleted format. Do not duplicate any topics and make sure they are not similar to each other."
-    # Make the request to the API
-    response = openai.Completion.create(
-        engine=model_engine,
-        prompt=prompt,
-        temperature=0,
-        max_tokens=1200,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0
-    )
 
-    # Get the generated text
-    generated_text = response["choices"][0]["text"]
+    # Read in the list of subjects from each line in designated file
+    subjects = []
+    with open('Outputs/course_list.txt', 'r') as file:
+        subjects = [line.strip() for line in file]
 
-    topic_pattern = re.compile(("(.)\s?(.+)"))
-    topics_found = topic_pattern.finditer(generated_text)
-    topics = []
-    for topic in topics_found:
-        topics.append(topic.group(2).strip())
+    # Test subject list
+    print(subjects)
 
-    return topics
+    # Make openai API call for each subject
+    for subject in subjects:
+        prompt = f"Create a list of class {num_topics} unique topics (1-3 words long) commonly found in a college textbook table of contents for " + \
+            subject + " course in a bulleted format. Do not duplicate any topics and make sure they are not similar to each other."
 
-def new_prompts():
-    openai.api_key = API_KEY
-    temperature = 1
-    subjects = open('Inputs/course_list.txt', 'r')
-    current_subject = ""
-    list_of_topics = []
-    current_topic = ""
+        # Make the request to the API
+        response = openai.Completion.create(
+            engine=model_engine,
+            prompt=prompt,
+            temperature=0.5,  # Adjust as needed
+            max_tokens=1200,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0
+        )
+        # Get the generated text
+        generated_text = response["choices"][0]["text"]
 
-    for line in subjects.readlines():
-        time.sleep(5)
-        current_subject = repr(line).replace("\\n", "").replace("'", "")
-        generated_topics = topic_generator(current_subject)
-        list_of_topics.append(generated_topics)
+        # Test generated text
+        print(generated_text)
+
+
+#         # Use regex to find the topics
+#         topic_pattern = re.compile(("(.)\s?(.+)"))
+#         topics_found = topic_pattern.finditer(generated_text)
+
+#         topic_list = []
+#         for item in topics_found:
+#             topic_list.append(item)
+
+
+#     # Write the topics to a file
+#     with open('Outputs/course_list.txt', 'w') as file:
+#         for topic in topics_found:
+#             topic = topic.strip()
+#             if topic:
+#                 file.write(topic + '\n')
+#     print("Done writing topic_list.txt")
+
+
+# def new_prompts():
+#     openai.api_key = API_KEY
+#     temperature = 1
+#     subjects = open('Inputs/course_list.txt', 'r')
+#     current_subject = ""
+#     list_of_topics = []
+#     current_topic = ""
+
+#     for line in subjects.readlines():
+#         time.sleep(5)
+#         current_subject = repr(line).replace("\\n", "").replace("'", "")
+#         generated_topics = topic_generator(current_subject)
+#         list_of_topics.append(generated_topics)
+
 
 def generate_pdf(text, subject, topic, prompt_index):
     # Create a new PDF with ReportLab
@@ -186,10 +240,10 @@ def generate_pdf(text, subject, topic, prompt_index):
                       leftMargin=50.5, topMargin=50.5,
                       bottomMargin=50.5).build(document)
 
+
 def main_gpt():
     # Set the API key and model
     openai.api_key = API_KEY
-
 
     current_subject = ""
     current_topic = ""
@@ -210,7 +264,7 @@ def main_gpt():
 
         NUM_OF_PROMPTS = 4
 
-        #Iterate through each topic in a class
+        # Iterate through each topic in a class
         for index, topic in enumerate(list_of_topics):
             current_topic = list_of_topics[index]
 
@@ -220,73 +274,88 @@ def main_gpt():
                 # Determine Prompt List based on Class
                 if "CS" or "STA" in current_subject:
                     prompts = [
-                        "Act as if you are a student studying for your final exams. Write very detailed lecture notes on " + current_topic + " for the course " + current_subject + ". Please include coding examples (explain them), key concepts, and definitions within the notes. Be descriptive and thorough in your notes. For every coding example, start with a comment saying Start of Code and end it with a comment saying End of Code. Randomize the formatting.",
-                        "Imagine you are a student studying for your final exams. Write a long and detailed list of sample computer science exam problems on " + current_topic + " for the course " + current_subject + " with solutions included. Randomize the formatting.",
-                        "In the format of a homework sheet with the title 'Extra Practice Problems', Create a long list of problems on " + current_topic + " for the course " + current_subject + " and for each question first explain how you would go about solving the problem, then solve the problem showing your work. Be sure to solve many problems incorrectly, and next to the solution denote whether it is correct or incorrect by writing '[CORRECT]' or '[INCORRECT]'. If it is incorrect, show the correct answer and explain how to get the correct answer. For every coding example, start with a comment saying 'Start of Code' and end it with a comment saying 'End of Code'. Randomize the formatting.",
+                        "Act as if you are a student studying for your final exams. Write very detailed lecture notes on " + current_topic + " for the course " + current_subject +
+                        ". Please include coding examples (explain them), key concepts, and definitions within the notes. Be descriptive and thorough in your notes. For every coding example, start with a comment saying Start of Code and end it with a comment saying End of Code. Randomize the formatting.",
+                        "Imagine you are a student studying for your final exams. Write a long and detailed list of sample computer science exam problems on " +
+                        current_topic + " for the course " + current_subject +
+                        " with solutions included. Randomize the formatting.",
+                        "In the format of a homework sheet with the title 'Extra Practice Problems', Create a long list of problems on " + current_topic + " for the course " + current_subject +
+                        " and for each question first explain how you would go about solving the problem, then solve the problem showing your work. Be sure to solve many problems incorrectly, and next to the solution denote whether it is correct or incorrect by writing '[CORRECT]' or '[INCORRECT]'. If it is incorrect, show the correct answer and explain how to get the correct answer. For every coding example, start with a comment saying 'Start of Code' and end it with a comment saying 'End of Code'. Randomize the formatting.",
                         "Imagine you are a student studying for your final exams. Create a sample topic outline that you would find in a syllabus on " + current_topic + " for the course " + current_subject + " and for each subtopic outline the main things to study and really good problem solving strategies to use on the exam. Randomize the formatting."]
                 elif "MATH" in current_subject or "PHYS" in current_subject or "CHEM" in current_subject or "CEE" in current_subject or "ECE" in current_subject or "AE" in current_subject or "ME" in current_subject or "MAP" in current_subject:
                     prompts = [
-                        "Act as if you are a student studying for your final exams. Write a very detailed study guide on " + current_topic + " for the course " + current_subject + ". Please include relevant equations, key concepts, definitions, and rules when possible. Be descriptive and thorough in your notes. Randomize the formatting.",
-                        "Imagine you are a student studying for your final exams. Write a long and detailed list of sample exam problems on " + current_topic + " for the course " + current_subject + " with solutions included. Randomize the formatting.",
-                        "In the format of a homework sheet with the title 'Extra Practice Problems', Create a long list of problems on " + current_topic + " for the course " + current_subject + " and for each question first explain how you would go about solving the problem, then solve the problem showing your work. Be sure to solve many problems incorrectly, and next to the solution denote whether it is correct or incorrect by writing '[CORRECT]' or '[INCORRECT]'. If it is incorrect, show the correct answer and explain how to get the correct answer. Randomize the formatting.",
+                        "Act as if you are a student studying for your final exams. Write a very detailed study guide on " + current_topic + " for the course " + current_subject +
+                        ". Please include relevant equations, key concepts, definitions, and rules when possible. Be descriptive and thorough in your notes. Randomize the formatting.",
+                        "Imagine you are a student studying for your final exams. Write a long and detailed list of sample exam problems on " +
+                        current_topic + " for the course " + current_subject +
+                        " with solutions included. Randomize the formatting.",
+                        "In the format of a homework sheet with the title 'Extra Practice Problems', Create a long list of problems on " + current_topic + " for the course " + current_subject +
+                        " and for each question first explain how you would go about solving the problem, then solve the problem showing your work. Be sure to solve many problems incorrectly, and next to the solution denote whether it is correct or incorrect by writing '[CORRECT]' or '[INCORRECT]'. If it is incorrect, show the correct answer and explain how to get the correct answer. Randomize the formatting.",
                         "Imagine you are a student studying for your final exams. Create a sample topic outline that you would find in a syllabus on " + current_topic + " for the course " + current_subject + " and for each subtopic outline the main things to study and really good problem solving strategies to use on the exam. Randomize the formatting."]
                 else:
                     prompts = [
-                        "Act as if you are a student studying for your final exams. Write very detailed lecture notes on " + current_topic + " for the course " + current_subject + ". Please include relevant key concepts, definitions, rules, and examples within the notes. Be descriptive and thorough in your notes. Randomize the formatting.",
-                        "Imagine you are a student studying for your final exams. Write a long and detailed list of sample exam problems on " + current_topic + " for the course " + current_subject + " with solutions included. Randomize the formatting.",
-                        "In the format of a homework sheet with the title 'Extra Practice Problems', Create a long list of problems on " + current_topic + " for the course " + current_subject + " and for each question first explain how you would go about solving the problem, then solve the problem showing your work. Be sure to solve many problems incorrectly, and next to the solution denote whether it is correct or incorrect by writing '[CORRECT]' or '[INCORRECT]'. If it is incorrect, show the correct answer and explain how to get the correct answer. Randomize the formatting.",
+                        "Act as if you are a student studying for your final exams. Write very detailed lecture notes on " + current_topic + " for the course " + current_subject +
+                        ". Please include relevant key concepts, definitions, rules, and examples within the notes. Be descriptive and thorough in your notes. Randomize the formatting.",
+                        "Imagine you are a student studying for your final exams. Write a long and detailed list of sample exam problems on " +
+                        current_topic + " for the course " + current_subject +
+                        " with solutions included. Randomize the formatting.",
+                        "In the format of a homework sheet with the title 'Extra Practice Problems', Create a long list of problems on " + current_topic + " for the course " + current_subject +
+                        " and for each question first explain how you would go about solving the problem, then solve the problem showing your work. Be sure to solve many problems incorrectly, and next to the solution denote whether it is correct or incorrect by writing '[CORRECT]' or '[INCORRECT]'. If it is incorrect, show the correct answer and explain how to get the correct answer. Randomize the formatting.",
                         "Imagine you are a student studying for your final exams. Create a sample topic outline that you would find in a syllabus on " + current_topic + " for the course " + current_subject + " and for each subtopic outline the main things to study and really good problem solving strategies to use on the exam. Randomize the formatting."]
                 prompt = prompts[prompt_index]
 
                 # Determine Model Parameters based on Prompt
                 temperatures = [0.3, 0, 0, 0.05]
 
-                response = openai.Completion.create(engine=model_engine, prompt=prompt, temperature=temperatures[prompt_index], max_tokens=3800, top_p=1, frequency_penalty=0, presence_penalty=0.5)
+                response = openai.Completion.create(
+                    engine=model_engine, prompt=prompt, temperature=temperatures[prompt_index], max_tokens=3800, top_p=1, frequency_penalty=0, presence_penalty=0.5)
 
                 # Get the generated text
                 generated_text = response["choices"][0]["text"]
-                #print(generated_text)
+                # print(generated_text)
                 try:
-                    generate_pdf(generated_text, current_subject, current_topic, prompt_index)
-                    print("Successfully Generated " + current_subject + " - " + current_topic + ".pdf")
+                    generate_pdf(generated_text, current_subject,
+                                 current_topic, prompt_index)
+                    print("Successfully Generated " + current_subject +
+                          " - " + current_topic + ".pdf")
                 except:
-                    print("An error occurred while creating " + current_subject + " - " + current_topic + ".pdf")
+                    print("An error occurred while creating " +
+                          current_subject + " - " + current_topic + ".pdf")
 
                 time.sleep(20)
 
 
-
-# CTK basic initialization
+###############
+# Create the root window
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("dark-blue")
-
 root = ctk.CTk()
-root.geometry("500x500")
+root.geometry("600x600")
 
-# configure the grid
+###############
+# Configure the grid
 root.columnconfigure(0, weight=1)
 root.columnconfigure(1, weight=1)
-
 root.rowconfigure(0, weight=1)
 root.rowconfigure(1, weight=1)
 root.rowconfigure(2, weight=1)
 
+###############
 # Application Title
-title = ctk.CTkLabel(master=root, text='Study Guide Generator by APKA', font=("Lato", 25))
+title = ctk.CTkLabel(
+    master=root, text='Study Guide Generator', font=("System", 50))
 title.grid(row=0, column=0, columnspan=2)
 
+###############
 # Upper left Settings Frame
 settingsFrame = ctk.CTkFrame(master=root)
 settingsFrame.grid(column=0, row=1, padx=10, pady=10, sticky='NSEW')
 
-spacer1 = ctk.CTkLabel(master=settingsFrame, text='  ')
-spacer1.pack()
-
 apiLabel = ctk.CTkLabel(master=settingsFrame, text="OpenAI API Key:")
 apiLabel.pack(padx=10, pady=0, )
 
-openaiKEY = ctk.CTkEntry(master=settingsFrame, placeholder_text='API Key', width=250)
-openaiKEY.insert(0,API_KEY)
+openaiKEY = ctk.CTkTextbox(master=settingsFrame,)
+openaiKEY.insert(0.0, API_KEY)
 openaiKEY.pack(padx=10, pady=0, )
 
 spacer = ctk.CTkLabel(master=settingsFrame, text='  ')
@@ -299,34 +368,48 @@ modelEntry = ctk.CTkEntry(master=settingsFrame, placeholder_text="enter model")
 modelEntry.insert(0, model_engine)
 modelEntry.pack(padx=10, pady=0, )
 
-
+###############
 # Upper Right Settings Frame
 inputFrame = ctk.CTkFrame(master=root)
 inputFrame.grid(column=1, row=1, padx=10, pady=10, sticky='NSEW')
+
+spacer8 = ctk.CTkLabel(master=inputFrame, text='  ')
+spacer8.pack()
 
 inputLabel = ctk.CTkLabel(master=inputFrame, text='Enter Course List:')
 inputLabel.pack(padx=10, pady=0, )
 
 inputBox = ctk.CTkTextbox(master=inputFrame, wrap='none')
-inputBox.insert(0.0, "[Course #] [Class Name]")
+# inputBox.insert(0.0, "[Course #] [Class Name]")
+#####################
+# Test Case
+ttext = test_file_text(2)
+inputBox.insert(0.0, ttext)
 inputBox.pack(padx=10, pady=0, )
 
 spacer4 = ctk.CTkLabel(master=inputFrame, text='  ')
 spacer4.pack()
 
-submitButton = ctk.CTkButton(master=inputFrame, text='Generate', hover_color='#144272', fg_color='#205295', command= full_monty)
+spacer7 = ctk.CTkLabel(master=inputFrame, text='  ')
+spacer7.pack()
+
+submitButton = ctk.CTkButton(master=inputFrame, text='Generate',
+                             hover_color='#144272', fg_color='#205295', command=main)
 submitButton.pack(padx=10, pady=0, )
 
+###############
 # Bottom Progress Frame and Submit Button
 progressFrame = ctk.CTkFrame(master=root)
-progressFrame.grid(column=0, row=2, columnspan=2, padx=10, pady=10, sticky='NSEW')
+progressFrame.grid(column=0, row=2, columnspan=2,
+                   padx=10, pady=10, sticky='NSEW')
 
 spacer5 = ctk.CTkLabel(master=progressFrame, text='  ')
 spacer5.pack()
 
-progressBar = ctk.CTkProgressBar(master= progressFrame, width= 300, height= 15, orientation="horizontal")
+progressBar = ctk.CTkProgressBar(
+    master=progressFrame, width=300, height=15, orientation="horizontal")
 progressBar.pack()
-progressBar.set(0) #Set progress bar to specific value (range 0 to 1).
+progressBar.set(0)  # Set progress bar to specific value (range 0 to 1).
 
 # Final Loop
 root.mainloop()
